@@ -1,4 +1,5 @@
 import argparse
+import binascii
 import socket
 from queue import Queue
 from threading import Thread
@@ -49,23 +50,45 @@ def tcp_port_scan(port):
 
 def udp_port_scan(port):
     # print(port)
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    s.settimeout(TIMEOUT)
-    s.connect((host_ip, port))
-
+    closed = False
     try:
-        s.sendall(b"UDP LOL XD")
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(TIMEOUT)
+        s.connect((host_ip, port))
+        s.sendall(binascii.unhexlify(
+            "db0011e9000000000001000000000000e7e402a426b15c2d00000000000000000000000000000000e7e50865eea10243"))
         data = s.recv(1024)
-        data_str = data.decode("utf-8")
-        print(f"port {port} opened, answer: {data_str}")
+        data_str = binascii.hexlify(data)
+        #print(f"port {port} opened, answer: {data_str}")
+        if b"1c" in data_str:
+            ports_info[port] = "NTP"
     except ConnectionResetError:
-        pass
+        closed = True
         # print(f"remote host forced connection reset on port {port}, (destination unreachable)")
     except TimeoutError:
         ports_info[port] = None  # print(f"port {port} connection timed-out.")
     finally:
         s.close()
+    if not closed:
+        if ports_info[port] is None:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.settimeout(TIMEOUT)
+                s.connect((host_ip, port))
+                s.sendall(binascii.unhexlify(
+                    "2dc70100000100000000000007626561636f6e7303676370046776743203636f6d0000010001"))
+                data = s.recv(1024)
+                data_str = binascii.hexlify(data)
+                #print(f"port {port} opened, answer: {data_str}")
+                if b"2dc7" in data_str:
+                    ports_info[port] = "DNS"
+            except ConnectionResetError:
+                pass
+                # print(f"remote host forced connection reset on port {port}, (destination unreachable)")
+            except TimeoutError:
+                    ports_info[port] = None  # print(f"port {port} connection timed-out.")
+            finally:
+                s.close()
 
 
 def scan_tcp_thread():
