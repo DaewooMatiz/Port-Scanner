@@ -120,21 +120,20 @@ def print_info():
 
 if __name__ == '__main__':
     # argparser
-    parser = argparse.ArgumentParser(description="Simple port scanner")
+    parser = argparse.ArgumentParser(description="TCP/UDP PORT SCANNER")
     parser.add_argument("host", help="Host to scan.")
-    parser.add_argument("-t", dest="tcp", action="store_true", default=False)
-    parser.add_argument("-u", dest="udp", action="store_true", default=False)
-    parser.add_argument("--ports", "-p", dest="port_range", default=[1, 65535],
+    parser.add_argument("-t", dest="tcp", action="store_true", default=False, help="scan TCP")
+    parser.add_argument("-u", dest="udp", action="store_true", default=False, help="scan UDP")
+    parser.add_argument("--ports", "-p", dest="port_number", default=[1, 65535],
                         nargs=2,
                         help="Port range to scan, default is 1-65535 (all ports)")
     args = parser.parse_args()
     # argparser => global val's
     tcp = args.tcp
     udp = args.udp
-    host, port_range = args.host, args.port_range
+    host, port_number = args.host, args.port_number
     host_ip = socket.gethostbyname(host)
-    start_port, end_port = port_range[0], port_range[1]
-    start_port, end_port = int(start_port), int(end_port)
+    start_port, end_port = int(port_number[0]), int(port_number[1])
     ports = [p for p in range(start_port, end_port + 1)]
     main(ports)
     print_info()
